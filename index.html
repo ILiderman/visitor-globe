@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Visitor Globe (CDN Script Version)</title>
+  <title>Visitor Globe (Colorful Texture)</title>
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { display: block; }
@@ -16,7 +16,7 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.120.1/examples/js/controls/OrbitControls.js"></script>
 
   <script>
-    console.log("🚀 Starting Globe with CDN scripts");
+    console.log("🚀 Starting Globe with colorful texture");
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -29,7 +29,7 @@
     controls.update();
 
     const globe = new ThreeGlobe()
-      .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-dark.jpg')
+      .globeImageUrl('https://raw.githubusercontent.com/iamchathu/3d-globe-example/main/img/earthmap4k.jpg')
       .pointsData([{ lat: 55.75, lng: 37.61 }])
       .pointAltitude(0.01)
       .pointColor(() => 'red');
@@ -57,7 +57,7 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    console.log("✅ Globe initialized");
+    console.log("✅ Globe initialized with colorful texture");
   </script>
 </body>
 </html>
