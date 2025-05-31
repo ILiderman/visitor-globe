@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Visitor Globe (Three.js 0.120.1)</title>
+  <title>Visitor Globe (Single Three.js Instance)</title>
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { display: block; }
@@ -13,9 +13,11 @@
   <script type="module">
     import * as THREE from 'https://esm.sh/three@0.120.1';
     import { OrbitControls } from 'https://esm.sh/three@0.120.1/examples/jsm/controls/OrbitControls.js';
-    import ThreeGlobe from 'https://esm.sh/three-globe';
+    import ThreeGlobeFactory from 'https://esm.sh/three-globe@2?external=three';
 
-    console.log("🚀 Starting 3D Globe with Three.js 0.120.1");
+    const ThreeGlobe = ThreeGlobeFactory(THREE);
+
+    console.log("🚀 Starting 3D Globe with Single Three.js Instance");
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -29,7 +31,7 @@
 
     const Globe = new ThreeGlobe()
       .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-dark.jpg')
-      .pointsData([{ lat: 55.75, lng: 37.61 }]) // Moscow
+      .pointsData([{ lat: 55.75, lng: 37.61 }])
       .pointAltitude(0.01)
       .pointColor(() => 'red');
 
@@ -56,7 +58,7 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    console.log("✅ Scene initialized with compatible Three.js version");
+    console.log("✅ Scene initialized with compatible shared Three.js");
   </script>
 </body>
 </html>
