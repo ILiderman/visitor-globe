@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Visitor Globe</title>
+  <title>Visitor Globe (Debug)</title>
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { display: block; }
@@ -14,6 +14,8 @@
     import * as THREE from 'https://esm.sh/three@0.128.0';
     import { OrbitControls } from 'https://esm.sh/three@0.128.0/examples/jsm/controls/OrbitControls.js';
     import ThreeGlobe from 'https://esm.sh/three-globe';
+
+    console.log("🚀 Starting 3D Globe");
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -26,8 +28,8 @@
     controls.update();
 
     const Globe = new ThreeGlobe()
-      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg')
-      .pointsData([])
+      .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-dark.jpg')
+      .pointsData([{ lat: 55.75, lng: 37.61 }]) // Moscow
       .pointAltitude(0.01)
       .pointColor(() => 'red');
 
@@ -38,14 +40,6 @@
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
     directionalLight.position.set(0, 0, 1);
     scene.add(directionalLight);
-
-    fetch('https://ipapi.co/json/')
-      .then(res => res.json())
-      .then(data => {
-        const lat = data.latitude;
-        const lon = data.longitude;
-        Globe.pointsData([{ lat: lat, lng: lon }]);
-      });
 
     function animate() {
       requestAnimationFrame(animate);
@@ -61,6 +55,8 @@
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
+
+    console.log("✅ Scene initialized");
   </script>
 </body>
 </html>
