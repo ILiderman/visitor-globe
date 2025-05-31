@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visitor Globe (Debug)</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <script type="module">
+    import * as THREE from 'https://esm.sh/three@0.128.0';
+    import { OrbitControls } from 'https://esm.sh/three@0.128.0/examples/jsm/controls/OrbitControls.js';
+    import ThreeGlobe from 'https://esm.sh/three-globe';
+
+    console.log("🚀 Starting 3D Globe");
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    camera.position.z = 300;
+    controls.update();
+
+    const Globe = new ThreeGlobe()
+      .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-dark.jpg')
+      .pointsData([{ lat: 55.75, lng: 37.61 }]) // Moscow
+      .pointAltitude(0.01)
+      .pointColor(() => 'red');
+
+    scene.add(Globe);
+
+    const ambientLight = new THREE.AmbientLight(0xbbbbbb);
+    scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    directionalLight.position.set(0, 0, 1);
+    scene.add(directionalLight);
+
+    function animate() {
+      requestAnimationFrame(animate);
+      Globe.rotation.y += 0.001;
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    console.log("✅ Scene initialized");
+  </script>
+</body>
+</html>
