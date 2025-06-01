@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Visitor Globe — Multi-Online</title>
+  <title>Visitor Globe — Multi-Online Final</title>
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { display: block; }
@@ -16,7 +16,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
   <script>
-    console.log("🌐 Visitor Globe: Multi-online active");
+    console.log("🌐 Visitor Globe: Multi-online FINAL");
 
     const supabaseUrl = "https://oeeobhhncjeicprutdgf.supabase.co";
     const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lZW9iaGhuY2plaWNwcnV0ZGdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg3NDY5MzYsImV4cCI6MjA2NDMyMjkzNn0.YNCQJt7YCfyUC6wQqw-YWI_gsVYcIr3HLEi_X0WGwYo";
@@ -48,63 +48,59 @@
     let currentVisitor = null;
 
     async function trackVisitor() {
-      try {
-        const res = await fetch('https://ipapi.co/json/');
-        const data = await res.json();
+      const res = await fetch('https://ipapi.co/json/');
+      const data = await res.json();
 
-        currentVisitor = {
-          lat: data.latitude,
-          lng: data.longitude,
-          city: data.city,
-          country: data.country_name
-        };
+      currentVisitor = {
+        lat: data.latitude,
+        lng: data.longitude,
+        city: data.city,
+        country: data.country_name
+      };
 
-        await supabaseClient.from("visits").insert([{
-          lat: currentVisitor.lat,
-          lng: currentVisitor.lng,
-          city: currentVisitor.city,
-          country: currentVisitor.country,
-          timestamp: new Date().toISOString()
-        }]);
+      await supabaseClient.from("visits").insert([{
+        lat: currentVisitor.lat,
+        lng: currentVisitor.lng,
+        city: currentVisitor.city,
+        country: currentVisitor.country,
+        timestamp: new Date().toISOString()
+      }]);
 
-        console.log("📌 Visitor logged:", currentVisitor.city, currentVisitor.country);
-      } catch (err) {
-        console.error("❌ IP API failed:", err);
-      }
+      console.log("📌 Visitor logged:", currentVisitor.city, currentVisitor.country);
     }
 
     async function loadPoints() {
-      try {
-        const { data, error } = await supabaseClient
-          .from("visits")
-          .select("*")
-          .order("timestamp", { ascending: false })
-          .limit(200);
+      const { data, error } = await supabaseClient
+        .from("visits")
+        .select("*")
+        .order("timestamp", { ascending: false })
+        .limit(200);
 
-        if (error) {
-          console.error("❌ Failed to fetch points:", error);
-          return;
-        }
-
-        const now = new Date();
-        const onlineUsers = data.filter(d => {
-          const ts = new Date(d.timestamp);
-          return (now - ts) < 30 * 1000;
-        });
-
-        globe.pointsData(data);
-
-        globe.labelsData(onlineUsers)
-          .labelLat(d => d.lat)
-          .labelLng(d => d.lng)
-          .labelText(d => d.city || "")
-          .labelSize(1.5)
-          .labelDotRadius(0.4);
-
-        console.log("✅ Rendered:", data.length, "points,", onlineUsers.length, "online");
-      } catch (err) {
-        console.error("❌ loadPoints() failed:", err);
+      if (error) {
+        console.error("❌ Failed to fetch points:", error);
+        return;
       }
+
+      const now = new Date();
+      const onlineUsers = data.filter(d => {
+        const ts = new Date(d.timestamp);
+        return (
+          (now - ts) < 30 * 1000 &&
+          typeof d.lat === "number" &&
+          typeof d.lng === "number"
+        );
+      });
+
+      globe.pointsData(data);
+
+      globe.labelsData(onlineUsers)
+        .labelLat(d => d.lat)
+        .labelLng(d => d.lng)
+        .labelText(d => d.city || "")
+        .labelSize(1.5)
+        .labelDotRadius(0.4);
+
+      console.log("✅ Rendered:", data.length, "points,", onlineUsers.length, "online");
     }
 
     function animate() {
