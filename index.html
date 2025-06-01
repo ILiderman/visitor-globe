@@ -2,14 +2,15 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Visitor Globe (ESM)</title>
+  <title>Visitor Globe — Модульная версия</title>
   <style>
     body { margin: 0; overflow: hidden; background: #000; }
     canvas { display: block; }
   </style>
 </head>
 <body>
-  <!-- Яндекс.Метрика -->
+
+  <!-- Yandex.Metrika -->
   <script type="text/javascript">
     (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){
       (m[i].a=m[i].a||[]).push(arguments)};
@@ -20,6 +21,7 @@
       k=e.createElement(t),a=e.getElementsByTagName(t)[0],
       k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
     })(window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
     ym(102315096, "init", {
       clickmap:true,
       trackLinks:true,
@@ -28,14 +30,14 @@
   </script>
   <noscript><div><img src="https://mc.yandex.ru/watch/102315096" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 
-  <!-- Главный скрипт как модуль -->
+  <!-- Основной JS -->
   <script type="module">
     import * as THREE from 'https://cdn.skypack.dev/three@0.150.1';
     import { OrbitControls } from 'https://cdn.skypack.dev/three@0.150.1/examples/jsm/controls/OrbitControls.js';
     import ThreeGlobe from 'https://cdn.skypack.dev/three-globe';
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-    console.log("🌐 Visitor Globe: Supabase + Online Markers");
+    console.log("🌐 Visitor Globe: Supabase + IPwho + Метрика");
 
     const supabase = createClient(
       'https://oeeobhhncjeicprutdgf.supabase.co',
@@ -53,7 +55,7 @@
     controls.update();
 
     const globe = new ThreeGlobe()
-      .globeImageUrl('earth.jpg')
+      .globeImageUrl('./earth.jpg') // Обязательно файл в корне репозитория!
       .pointAltitude(0.01)
       .pointColor(() => 'red');
 
@@ -61,7 +63,6 @@
 
     const light = new THREE.AmbientLight(0xbbbbbb);
     scene.add(light);
-
     const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
     dirLight.position.set(0, 0, 1);
     scene.add(dirLight);
@@ -77,9 +78,9 @@
 
         const points = data.map(p => ({ lat: p.lat, lng: p.lng }));
         globe.pointsData(points);
-        console.log(`✅ Loaded ${points.length} historical points`);
+        console.log(`✅ Загружено ${points.length} точек`);
       } catch (err) {
-        console.warn("⚠️ Failed to load points:", err);
+        console.warn("⚠️ Ошибка загрузки точек:", err);
       }
     }
 
@@ -88,9 +89,9 @@
         const res = await fetch('https://ipwho.is/');
         const json = await res.json();
         const { latitude, longitude, city, country } = json;
-        if (!latitude || !longitude) throw new Error("No coords");
+        if (!latitude || !longitude) throw new Error("Нет координат");
 
-        console.log("📌 Logging user:", city, country);
+        console.log("📌 Город посетителя:", city, country);
 
         globe.labelsData([{ lat: latitude, lng: longitude, text: city }])
               .labelColor(() => 'yellow')
@@ -99,7 +100,7 @@
 
         await supabase.from('visits').insert([{ lat: latitude, lng: longitude, city, country }]);
       } catch (err) {
-        console.warn("⚠️ Logging failed:", err);
+        console.warn("⚠️ Ошибка логирования:", err);
       }
     }
 
