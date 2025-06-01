@@ -3,21 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Visitor Globe — Color & Safe</title>
+  <title>Visitor Globe — Multi-Online</title>
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { display: block; }
   </style>
 </head>
 <body>
-  <!-- Non-module CDN scripts -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.120.1/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three-globe"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.120.1/examples/js/controls/OrbitControls.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
   <script>
-    console.log("🌎 Visitor Globe: Color + Safe Label Fix");
+    console.log("🌐 Visitor Globe: Multi-online active");
 
     const supabaseUrl = "https://oeeobhhncjeicprutdgf.supabase.co";
     const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lZW9iaGhuY2plaWNwcnV0ZGdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg3NDY5MzYsImV4cCI6MjA2NDMyMjkzNn0.YNCQJt7YCfyUC6wQqw-YWI_gsVYcIr3HLEi_X0WGwYo";
@@ -57,15 +56,15 @@
           lat: data.latitude,
           lng: data.longitude,
           city: data.city,
-          country: data.country_name,
-          isCurrentVisitor: true
+          country: data.country_name
         };
 
         await supabaseClient.from("visits").insert([{
           lat: currentVisitor.lat,
           lng: currentVisitor.lng,
           city: currentVisitor.city,
-          country: currentVisitor.country
+          country: currentVisitor.country,
+          timestamp: new Date().toISOString()
         }]);
 
         console.log("📌 Visitor logged:", currentVisitor.city, currentVisitor.country);
@@ -87,23 +86,22 @@
           return;
         }
 
-        const allPoints = [...data, currentVisitor].filter(Boolean);
-        globe.pointsData(allPoints);
+        const now = new Date();
+        const onlineUsers = data.filter(d => {
+          const ts = new Date(d.timestamp);
+          return (now - ts) < 30 * 1000;
+        });
 
-        const safeLabelData = (
-          currentVisitor &&
-          typeof currentVisitor.lat === "number" &&
-          typeof currentVisitor.lng === "number"
-        ) ? [currentVisitor] : [];
+        globe.pointsData(data);
 
-        globe.labelsData(safeLabelData)
+        globe.labelsData(onlineUsers)
           .labelLat(d => d.lat)
           .labelLng(d => d.lng)
           .labelText(d => d.city || "")
           .labelSize(1.5)
           .labelDotRadius(0.4);
 
-        console.log("✅ Points rendered:", allPoints.length);
+        console.log("✅ Rendered:", data.length, "points,", onlineUsers.length, "online");
       } catch (err) {
         console.error("❌ loadPoints() failed:", err);
       }
