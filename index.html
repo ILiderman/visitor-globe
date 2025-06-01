@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Visitor Globe (Non-Module Version)</title>
+  <title>Visitor Globe — Show City Only for Current Visitor</title>
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { display: block; }
@@ -17,7 +17,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
   <script>
-    console.log("🚀 Starting Non-Module Visitor Globe");
+    console.log("🚀 Visitor Globe: Only current user labeled");
 
     const supabaseUrl = "https://oeeobhhncjeicprutdgf.supabase.co";
     const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lZW9iaGhuY2plaWNwcnV0ZGdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg3NDY5MzYsImV4cCI6MjA2NDMyMjkzNn0.YNCQJt7YCfyUC6wQqw-YWI_gsVYcIr3HLEi_X0WGwYo";
@@ -46,24 +46,29 @@
     directionalLight.position.set(0, 0, 1);
     scene.add(directionalLight);
 
+    let currentVisitor = null;
+
     async function trackVisitor() {
       try {
         const res = await fetch('https://ipapi.co/json/');
         const data = await res.json();
-        const { latitude, longitude, city, country_name } = data;
 
-        const { error } = await supabaseClient.from("visits").insert([{
-          lat: latitude,
-          lng: longitude,
-          city: city,
-          country: country_name
+        currentVisitor = {
+          lat: data.latitude,
+          lng: data.longitude,
+          city: data.city,
+          country: data.country_name,
+          isCurrentVisitor: true
+        };
+
+        await supabaseClient.from("visits").insert([{
+          lat: currentVisitor.lat,
+          lng: currentVisitor.lng,
+          city: currentVisitor.city,
+          country: currentVisitor.country
         }]);
 
-        if (error) {
-          console.error("❌ Error inserting visitor:", error);
-        } else {
-          console.log("📌 Visitor logged:", city, country_name);
-        }
+        console.log("📌 Visitor logged:", currentVisitor.city, currentVisitor.country);
       } catch (err) {
         console.error("❌ IP API failed:", err);
       }
@@ -71,20 +76,30 @@
 
     async function loadPoints() {
       try {
-        const { data, error } = await supabaseClient.from("visits").select("*").order("timestamp", { ascending: false }).limit(200);
+        const { data, error } = await supabaseClient
+          .from("visits")
+          .select("*")
+          .order("timestamp", { ascending: false })
+          .limit(200);
+
         if (error) {
           console.error("❌ Failed to fetch points:", error);
           return;
         }
 
-        globe.pointsData(data);
-        globe.labelsData(data)
-          .labelLat(d => d.lat)
-          .labelLng(d => d.lng)
-          .labelText(d => d.city || "")
-          .labelSize(1.5)
-          .labelDotRadius(0.4);
-        console.log("✅ Points rendered:", data.length);
+        const allPoints = [...data, currentVisitor].filter(Boolean);
+        globe.pointsData(allPoints);
+
+        if (currentVisitor) {
+          globe.labelsData([currentVisitor])
+            .labelLat(d => d.lat)
+            .labelLng(d => d.lng)
+            .labelText(d => d.city || "")
+            .labelSize(1.5)
+            .labelDotRadius(0.4);
+        }
+
+        console.log("✅ Points rendered:", allPoints.length);
       } catch (err) {
         console.error("❌ loadPoints() failed:", err);
       }
@@ -104,9 +119,11 @@
     });
 
     // Start
-    trackVisitor();
-    loadPoints();
-    setInterval(loadPoints, 10000);
+    trackVisitor().then(() => {
+      loadPoints();
+      setInterval(loadPoints, 10000);
+    });
+
     animate();
   </script>
 </body>
