@@ -86,7 +86,8 @@
       d &&
       typeof d.lat === "number" &&
       typeof d.lng === "number" &&
-      d.city &&
+      typeof d.city === "string" &&
+      d.city.length > 0 &&
       (new Date() - new Date(d.timestamp)) < 30 * 1000
     );
 
