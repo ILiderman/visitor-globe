@@ -2,22 +2,14 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Visitor Globe</title>
+  <title>Visitor Globe (ESM)</title>
   <style>
     body { margin: 0; overflow: hidden; background: #000; }
     canvas { display: block; }
   </style>
 </head>
 <body>
-  <!-- Three.js -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/examples/js/controls/OrbitControls.js"></script>
-  <!-- Three Globe -->
-  <script src="https://cdn.jsdelivr.net/npm/three-globe"></script>
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-
-  <!-- Yandex.Metrika -->
+  <!-- Яндекс.Метрика -->
   <script type="text/javascript">
     (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){
       (m[i].a=m[i].a||[]).push(arguments)};
@@ -36,10 +28,16 @@
   </script>
   <noscript><div><img src="https://mc.yandex.ru/watch/102315096" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 
-  <script>
-    console.log("🌐 Visitor Globe: Supabase + IPwho + Метрика");
+  <!-- Главный скрипт как модуль -->
+  <script type="module">
+    import * as THREE from 'https://cdn.skypack.dev/three@0.150.1';
+    import { OrbitControls } from 'https://cdn.skypack.dev/three@0.150.1/examples/jsm/controls/OrbitControls.js';
+    import ThreeGlobe from 'https://cdn.skypack.dev/three-globe';
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-    const supabase = window.supabase.createClient(
+    console.log("🌐 Visitor Globe: Supabase + Online Markers");
+
+    const supabase = createClient(
       'https://oeeobhhncjeicprutdgf.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lZW9iaGhuY2plaWNwcnV0ZGdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg3NDY5MzYsImV4cCI6MjA2NDMyMjkzNn0.YNCQJt7YCfyUC6wQqw-YWI_gsVYcIr3HLEi_X0WGwYo'
     );
@@ -50,12 +48,12 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    const controls = new OrbitControls(camera, renderer.domElement);
     camera.position.z = 300;
     controls.update();
 
     const globe = new ThreeGlobe()
-      .globeImageUrl('earth.jpg') // файл текстуры должен быть рядом
+      .globeImageUrl('earth.jpg')
       .pointAltitude(0.01)
       .pointColor(() => 'red');
 
@@ -70,43 +68,38 @@
 
     async function loadPoints() {
       try {
-        const { data, error } = await supabase.from('visits').select('*').order('timestamp', { ascending: false }).limit(200);
+        const { data, error } = await supabase
+          .from('visits')
+          .select('*')
+          .order('timestamp', { ascending: false })
+          .limit(200);
         if (error) throw error;
 
-        const processed = data.map(p => ({
-          lat: p.lat,
-          lng: p.lng
-        }));
-
-        globe.pointsData(processed);
-        console.log(`✅ Загружено точек из Supabase: ${processed.length}`);
+        const points = data.map(p => ({ lat: p.lat, lng: p.lng }));
+        globe.pointsData(points);
+        console.log(`✅ Loaded ${points.length} historical points`);
       } catch (err) {
-        console.error("⚠️ Ошибка при загрузке точек:", err);
+        console.warn("⚠️ Failed to load points:", err);
       }
     }
 
     async function logCurrentVisitor() {
       try {
-        console.log("🌍 Получение текущего местоположения...");
         const res = await fetch('https://ipwho.is/');
         const json = await res.json();
-
         const { latitude, longitude, city, country } = json;
-        if (!latitude || !longitude) throw new Error("Местоположение не определено");
+        if (!latitude || !longitude) throw new Error("No coords");
 
-        console.log("📌 IP-данные:", json);
+        console.log("📌 Logging user:", city, country);
 
-        // Добавляем на глобус только одну метку с названием
-        globe.labelsData([{ lat: latitude, lng: longitude, text: `${city}` }])
+        globe.labelsData([{ lat: latitude, lng: longitude, text: city }])
               .labelColor(() => 'yellow')
               .labelAltitude(0.01)
               .labelSize(1.2);
 
-        // Сохраняем в Supabase
         await supabase.from('visits').insert([{ lat: latitude, lng: longitude, city, country }]);
-
       } catch (err) {
-        console.warn("⚠️ Ошибка геолокации или записи:", err);
+        console.warn("⚠️ Logging failed:", err);
       }
     }
 
