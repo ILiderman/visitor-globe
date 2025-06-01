@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,40 +7,44 @@
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { display: block; }
-    .label {
+    #label {
       position: absolute;
+      background: rgba(0,0,0,0.7);
       color: white;
-      background: rgba(0,0,0,0.6);
-      padding: 2px 4px;
+      padding: 4px 8px;
       border-radius: 4px;
       font-size: 12px;
       pointer-events: none;
+      display: none;
     }
   </style>
 </head>
 <body>
+  <div id="label"></div>
+
+  <!-- Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.120.1/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three-globe"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.120.1/examples/js/controls/OrbitControls.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
   <script>
-    console.log("🌐 Visitor Globe: Multi-online + Цветная текстура");
+    console.log("🌐 Visitor Globe: Safe pointsData enabled");
 
-    const supabase = window.supabase.createClient(
+    // Initialize Supabase
+    const supabase = supabase.createClient(
       'https://oeeobhhncjeicprutdgf.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lZW9iaGhuY2plaWNwcnV0ZGdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg3NDY5MzYsImV4cCI6MjA2NDMyMjkzNn0.YNCQJt7YCfyUC6wQqw-YWI_gsVYcIr3HLEi_X0WGwYo'
     );
 
+    // Setup Three.js scene
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
-
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     camera.position.z = 300;
-    controls.update();
 
     const globe = new ThreeGlobe()
       .globeImageUrl('https://raw.githubusercontent.com/ILiderman/visitor-globe/main/earth.jpg')
@@ -56,13 +59,34 @@
     directionalLight.position.set(0, 0, 1);
     scene.add(directionalLight);
 
+    async function loadPoints() {
+      try {
+        const { data, error } = await supabase
+          .from('visits')
+          .select('*')
+          .order('timestamp', { ascending: false })
+          .limit(200);
+
+        if (error) throw error;
+
+        globe.pointsData(data.map(d => ({
+          lat: d.lat,
+          lng: d.lng,
+          label: d.city + ', ' + d.country
+        })));
+
+        console.log(`✅ Points loaded: ${data.length}`);
+      } catch (err) {
+        console.error("⚠️ Failed to load pointsData:", err);
+      }
+    }
+
     function animate() {
       requestAnimationFrame(animate);
       globe.rotation.y += 0.001;
       controls.update();
       renderer.render(scene, camera);
     }
-    animate();
 
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
@@ -70,71 +94,8 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    async function loadPoints() {
-      try {
-        const { data: allPoints, error } = await supabase
-          .from('visits')
-          .select('*')
-          .order('timestamp', { ascending: false })
-          .limit(200);
-
-        if (error) {
-          console.error("❌ Failed to fetch Supabase data:", error.message);
-          return;
-        }
-
-        const now = Date.now();
-        const points = [];
-        allPoints.forEach((p) => {
-          if (!p.lat || !p.lng) return;
-
-          points.push({ lat: p.lat, lng: p.lng });
-
-          if (now - new Date(p.timestamp).getTime() < 3 * 60 * 1000) {
-            const label = document.createElement('div');
-            label.className = 'label';
-            label.textContent = p.city;
-            document.body.appendChild(label);
-
-            const vector = new THREE.Vector3();
-            const coords = globe.getCoords(p.lat, p.lng, 1.01);
-            vector.set(...coords).project(camera);
-
-            label.style.left = ((vector.x + 1) / 2 * window.innerWidth) + 'px';
-            label.style.top = ((-vector.y + 1) / 2 * window.innerHeight) + 'px';
-          }
-        });
-
-        globe.pointsData(points);
-        console.log(`✅ Rendered ${points.length} point(s)`);
-
-      } catch (err) {
-        console.error("⚠️ Failed to load pointsData:", err);
-      }
-    }
-
-    async function logVisit() {
-      try {
-        const res = await fetch('https://ipapi.co/json');
-        const loc = await res.json();
-        console.log("📌 Visitor location:", loc);
-
-        await supabase.from('visits').insert([{
-          lat: loc.latitude,
-          lng: loc.longitude,
-          city: loc.city,
-          country: loc.country_name,
-          timestamp: new Date().toISOString()
-        }]);
-
-        loadPoints();
-      } catch (err) {
-        console.error("⚠️ IP location failed", err);
-      }
-    }
-
-    logVisit();
-    setInterval(loadPoints, 15000);
+    animate();
+    loadPoints();
   </script>
 </body>
 </html>
