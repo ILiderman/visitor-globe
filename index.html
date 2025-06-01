@@ -93,6 +93,7 @@
 
       globe.pointsData(data);
 
+      globe.labelsData([]); // explicit reset to avoid internal caching
       if (onlineUsers.length > 0) {
         globe.labelsData(onlineUsers)
           .labelLat(d => d.lat)
@@ -100,8 +101,6 @@
           .labelText(d => d.city || "")
           .labelSize(1.5)
           .labelDotRadius(0.4);
-      } else {
-        globe.labelsData([]); // clear labels to avoid errors
       }
 
       console.log("✅ Rendered:", data.length, "points,", onlineUsers.length, "online");
