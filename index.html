@@ -1,82 +1,63 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Visitor Globe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visitor Globe (CDN Script Version)</title>
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { display: block; }
   </style>
 </head>
 <body>
-  <div id="globeViz"></div>
+  <!-- Three.js and ThreeGlobe from jsDelivr (compatible versions) -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.120.1/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three-globe"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.120.1/examples/js/controls/OrbitControls.js"></script>
 
-  <!-- Подключение Three.js -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
-
-  <!-- OrbitControls -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/examples/js/controls/OrbitControls.js"></script>
-
-  <!-- three-globe -->
-  <script src="https://cdn.jsdelivr.net/npm/three-globe@2.26.2/dist/three-globe.min.js"></script>
-
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-
-  <!-- Yandex.Metrika -->
-  <script type="text/javascript">
-    (function(m,e,t,r,i,k,a){
-      m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-      m[i].l=1*new Date();
-      for (var j = 0; j < document.scripts.length; j++) {
-        if (document.scripts[j].src === r) { return; }
-      }
-      k=e.createElement(t),a=e.getElementsByTagName(t)[0],
-      k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
-    })(window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
-
-    ym(102315096, "init", {
-      clickmap:true,
-      trackLinks:true,
-      accurateTrackBounce:true
-    });
-  </script>
-
-  <!-- App Logic -->
   <script>
-    const supabase = supabase.createClient(
-      'https://oeeobhhncjeicprutdgf.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
-    );
+    console.log("🚀 Starting Globe with CDN scripts");
 
-    console.log("📦 Supabase готов");
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
 
-    const world = Globe()
-      .globeImageUrl('https://iliderman.github.io/visitor-globe/earth.jpg')
-      .width(window.innerWidth)
-      .height(window.innerHeight)
-      .backgroundColor('#000')
-      .pointsData([]);
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    camera.position.z = 300;
+    controls.update();
 
-    document.getElementById('globeViz').appendChild(world());
+    const globe = new ThreeGlobe()
+      .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-dark.jpg')
+      .pointsData([{ lat: 55.75, lng: 37.61 }])
+      .pointAltitude(0.01)
+      .pointColor(() => 'red');
 
-    async function addVisitorPoint() {
-      try {
-        const ipInfo = await fetch('https://ipapi.co/json/').then(res => res.json());
-        const { latitude: lat, longitude: lng, city, country_name: country } = ipInfo;
+    scene.add(globe);
 
-        await supabase.from('visits').insert([{ lat, lng, city, country }]);
-        console.log("✅ Запись добавлена:", city, country);
+    const ambientLight = new THREE.AmbientLight(0xbbbbbb);
+    scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    directionalLight.position.set(0, 0, 1);
+    scene.add(directionalLight);
 
-        world.pointsData([{ lat, lng }]);
-      } catch (err) {
-        console.error("❌ Ошибка записи:", err);
-      }
+    function animate() {
+      requestAnimationFrame(animate);
+      globe.rotation.y += 0.001;
+      controls.update();
+      renderer.render(scene, camera);
     }
 
-    addVisitorPoint();
-  </script>
+    animate();
 
-  <noscript><div><img src="https://mc.yandex.ru/watch/102315096" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    console.log("✅ Globe initialized");
+  </script>
 </body>
 </html>
