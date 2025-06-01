@@ -97,14 +97,18 @@
 
       globe.pointsData(data);
 
-      globe.labelsData([]); // explicit reset to avoid internal caching
-      if (onlineUsers.length > 0) {
-        globe.labelsData(onlineUsers)
-          .labelLat(d => d.lat)
-          .labelLng(d => d.lng)
-          .labelText(d => d.city || "")
-          .labelSize(1.5)
-          .labelDotRadius(0.4);
+      try {
+        globe.labelsData([]); // explicit reset to avoid internal caching
+        if (onlineUsers.length > 0) {
+          globe.labelsData(onlineUsers)
+            .labelLat(d => d.lat)
+            .labelLng(d => d.lng)
+            .labelText(d => d.city || "")
+            .labelSize(1.5)
+            .labelDotRadius(0.4);
+        }
+      } catch (e) {
+        console.warn("⚠️ labelsData crashed:", e);
       }
 
       console.log("✅ Rendered:", data.length, "points,", onlineUsers.length, "online");
