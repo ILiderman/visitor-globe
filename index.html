@@ -1,123 +1,116 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Visitor Globe</title>
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { display: block; }
+    #label { position: absolute; color: white; font-family: sans-serif; }
   </style>
 </head>
 <body>
+  <!-- Yandex.Metrika counter -->
+  <script type="text/javascript">
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();
+    for (var j = 0; j < document.scripts.length; j++) {
+      if (document.scripts[j].src === r) { return; }
+    }
+    k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
 
-<!-- THREE.JS & CONTROLS -->
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    ym(102315096, "init", {
+        clickmap:true,
+        trackLinks:true,
+        accurateTrackBounce:true
+    });
+  </script>
+  <noscript><div><img src="https://mc.yandex.ru/watch/102315096" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+  <!-- /Yandex.Metrika counter -->
 
-<!-- THREE-GLOBE (стабильная) -->
-<script src="https://cdn.jsdelivr.net/npm/three-globe@2.22.1/dist/three-globe.min.js"></script>
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Three.js -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.120.1/build/three.min.js"></script>
+  <!-- OrbitControls -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.120.1/examples/js/controls/OrbitControls.js"></script>
+  <!-- Three Globe -->
+  <script src="https://cdn.jsdelivr.net/npm/three-globe"></script>
 
-<!-- Supabase -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script>
+    console.log("🌐 Visitor Globe: Supabase + IPwho + Метрика");
 
-<!-- Яндекс Метрика -->
-<script type="text/javascript">
-  (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-  m[i].l=1*new Date();
-  for (var j = 0; j < document.scripts.length; j++) {
-    if (document.scripts[j].src === r) { return; }
-  }
-  k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
-  (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+    const supabase = createClient(
+      'https://oeeobhhncjeicprutdgf.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lZW9iaGhuY2plaWNwcnV0ZGdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg3NDY5MzYsImV4cCI6MjA2NDMyMjkzNn0.YNCQJt7YCfyUC6wQqw-YWI_gsVYcIr3HLEi_X0WGwYo'
+    );
 
-  ym(102315096, "init", {
-      clickmap:true,
-      trackLinks:true,
-      accurateTrackBounce:true
-  });
-</script>
-<noscript><div><img src="https://mc.yandex.ru/watch/102315096" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
 
-<script>
-  console.log("🌐 Visitor Globe: Supabase + IPwho + Метрика");
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    camera.position.z = 300;
+    controls.update();
 
-  // Supabase
-  const supabase = supabase.createClient(
-    'https://oeeobhhncjeicprutdgf.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lZW9iaGhuY2plaWNwcnV0ZGdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg3NDY5MzYsImV4cCI6MjA2NDMyMjkzNn0.YNCQJt7YCfyUC6wQqw-YWI_gsVYcIr3HLEi_X0WGwYo'
-  );
+    const globe = new ThreeGlobe()
+      .globeImageUrl('./earth.jpg')
+      .pointAltitude(0.01)
+      .pointColor(() => 'red');
 
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-  const renderer = new THREE.WebGLRenderer();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  document.body.appendChild(renderer.domElement);
+    scene.add(globe);
 
-  const controls = new THREE.OrbitControls(camera, renderer.domElement);
-  camera.position.z = 300;
-  controls.update();
+    const ambientLight = new THREE.AmbientLight(0xbbbbbb);
+    scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    directionalLight.position.set(0, 0, 1);
+    scene.add(directionalLight);
 
-  const globe = new ThreeGlobe()
-    .globeImageUrl('https://raw.githubusercontent.com/ILiderman/visitor-globe/main/earth.jpg')
-    .pointAltitude(0.01)
-    .pointColor(() => 'red');
+    function animate() {
+      requestAnimationFrame(animate);
+      globe.rotation.y += 0.001;
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
 
-  scene.add(globe);
-
-  scene.add(new THREE.AmbientLight(0xbbbbbb));
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
-  directionalLight.position.set(0, 0, 1);
-  scene.add(directionalLight);
-
-  // Get user location
-  fetch('https://ipapi.co/json/')
-    .then(res => res.json())
-    .then(async data => {
-      const point = {
-        lat: data.latitude,
-        lng: data.longitude,
-        city: data.city,
-        country: data.country_name
-      };
-      console.log("📌 Visitor logged:", point.city, point.country);
-
-      await supabase.from('visits').insert([point]);
-      loadPoints(point);
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-  async function loadPoints(currentVisitor) {
-    const { data, error } = await supabase
-      .from('visits')
-      .select('*')
-      .order('timestamp', { ascending: false })
-      .limit(200);
+    async function loadPoints() {
+      try {
+        const { data, error } = await supabase.from('visits').select('*').order('timestamp', { ascending: false }).limit(200);
+        if (error) throw error;
+        const points = data.map(v => ({ lat: v.lat, lng: v.lng }));
+        globe.pointsData(points);
+        console.log(`✅ Loaded ${points.length} points`);
+      } catch (err) {
+        console.error("⚠️ Failed to load pointsData:", err);
+      }
+    }
 
-    if (error) return console.error("❌ Supabase error", error);
+    async function logVisitor() {
+      try {
+        const res = await fetch("https://ipwho.is/");
+        const json = await res.json();
+        const { latitude: lat, longitude: lng, city, country } = json;
+        console.log("📌 Visitor location:", json);
+        await supabase.from('visits').insert([{ lat, lng, city, country }]);
+        loadPoints();
+      } catch (err) {
+        console.error("⚠️ Visitor log error:", err);
+      }
+    }
 
-    // Все точки (но показываем название только у текущего)
-    globe.pointsData(data.map(p => ({
-      lat: p.lat,
-      lng: p.lng,
-      label: (p.lat === currentVisitor.lat && p.lng === currentVisitor.lng) ? `${p.city}` : ''
-    })));
-
-    console.log(`✅ Rendered: ${data.length} points`);
-  }
-
-  function animate() {
-    requestAnimationFrame(animate);
-    globe.rotation.y += 0.001;
-    controls.update();
-    renderer.render(scene, camera);
-  }
-  animate();
-
-  window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-  });
-</script>
-
+    logVisitor();
+  </script>
 </body>
 </html>
