@@ -48,8 +48,10 @@
     let currentVisitor = null;
 
     async function trackVisitor() {
-      const res = await fetch('https://ipapi.co/json/');
+      console.log("🌍 Fetching IP location...");
+    const res = await fetch('https://ipapi.co/json/');
       const data = await res.json();
+    console.log('🌐 IPAPI data:', data);
 
       currentVisitor = {
         lat: data.latitude,
@@ -58,7 +60,7 @@
         country: data.country_name
       };
 
-      await supabaseClient.from("visits").insert([{
+      const { error } = await supabaseClient.from("visits").insert([{
         lat: currentVisitor.lat,
         lng: currentVisitor.lng,
         city: currentVisitor.city,
@@ -66,7 +68,9 @@
         timestamp: new Date().toISOString()
       }]);
 
-      console.log("📌 Visitor logged:", currentVisitor.city, currentVisitor.country);
+      if (error) {
+      console.error("❌ Supabase insert error:", error);
+    } else console.log("📌 Visitor logged:", currentVisitor.city, currentVisitor.country);
     }
 
     async function loadPoints() {
