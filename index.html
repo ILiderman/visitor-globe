@@ -1,130 +1,160 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Visitor Globe (CDN)</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visitor Globe (Supabase + IPwho + Yandex Metrika)</title>
   <style>
-    body { margin: 0; overflow: hidden; background: #000; }
+    body { margin: 0; overflow: hidden; background-color: black; }
     canvas { display: block; }
   </style>
 </head>
 <body>
+  <script type="module">
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js';
+    import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.150.1/examples/jsm/controls/OrbitControls.js';
+    import ThreeGlobe from 'https://cdn.jsdelivr.net/npm/three-globe@2.42.8/dist/three-globe.module.js';
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-<!-- Yandex.Metrika -->
-<script type="text/javascript">
-  (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-  m[i].l=1*new Date();
-  for (var j = 0; j < document.scripts.length; j++) {
-    if (document.scripts[j].src === r) return;
-  }
-  k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
-  })(window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+    console.log("🌐 Visitor Globe: Supabase + IPwho + Метрика");
 
-  ym(102315096, "init", {
-    clickmap:true,
-    trackLinks:true,
-    accurateTrackBounce:true
-  });
-</script>
-<noscript><div><img src="https://mc.yandex.ru/watch/102315096" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+    const supabaseUrl = 'https://oeeobhhncjeicprutdgf.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lZW9iaGhuY2plaWNwcnV0ZGdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg3NDY5MzYsImV4cCI6MjA2NDMyMjkzNn0.YNCQJt7YCfyUC6wQqw-YWI_gsVYcIr3HLEi_X0WGwYo';
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-<script type="module">
-  import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js';
-  import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.150.1/examples/jsm/controls/OrbitControls.js';
-  import ThreeGlobe from 'https://cdn.jsdelivr.net/npm/three-globe@2.26.2/dist/three-globe.module.js';
-  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-
-  console.log("🌐 Visitor Globe: Supabase + IPwho + Метр");
-
-  const supabase = createClient(
-    'https://oeeobhhncjeicprutdgf.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lZW9iaGhuY2plaWNwcnV0ZGdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg3NDY5MzYsImV4cCI6MjA2NDMyMjkzNn0.YNCQJt7YCfyUC6wQqw-YWI_gsVYcIr3HLEi_X0WGwYo'
-  );
-
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-  const renderer = new THREE.WebGLRenderer();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  document.body.appendChild(renderer.domElement);
-
-  const controls = new OrbitControls(camera, renderer.domElement);
-  camera.position.z = 300;
-  controls.update();
-
-  const globe = new ThreeGlobe()
-    .globeImageUrl('./earth.jpg') // Убедись, что earth.jpg загружен в корень репозитория
-    .pointAltitude(0.01)
-    .pointColor(() => 'red');
-
-  scene.add(globe);
-
-  const ambientLight = new THREE.AmbientLight(0xbbbbbb);
-  scene.add(ambientLight);
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
-  directionalLight.position.set(0, 0, 1);
-  scene.add(directionalLight);
-
-  function animate() {
-    requestAnimationFrame(animate);
-    globe.rotation.y += 0.001;
-    controls.update();
-    renderer.render(scene, camera);
-  }
-
-  async function logVisitor() {
-    try {
-      const res = await fetch('https://ipwho.is/');
-      const data = await res.json();
-      const { latitude: lat, longitude: lng, city, country } = data;
-
-      console.log("📌 Посетитель:", city, country);
-
-      // Сохраняем в Supabase
-      await supabase.from('visits').insert([{ lat, lng, city, country }]);
-
-      // Показываем только город текущего
-      globe.labelsData([{ lat, lng, text: city }])
-        .labelColor(() => 'yellow')
-        .labelSize(1.2)
-        .labelAltitude(0.02);
-
-    } catch (error) {
-      console.error("⚠️ Ошибка геолокации:", error);
-    }
-  }
-
-  async function loadPoints() {
-    try {
-      const { data, error } = await supabase
-        .from('visits')
-        .select('*')
-        .order('timestamp', { ascending: false })
-        .limit(200);
-
-      if (error) throw error;
-
-      const points = data.map(row => ({
-        lat: row.lat,
-        lng: row.lng
-      }));
-
-      globe.pointsData(points);
-      console.log(`✅ Загружено точек: ${points.length}`);
-    } catch (error) {
-      console.error("❌ Ошибка загрузки точек:", error);
-    }
-  }
-
-  animate();
-  logVisitor();
-  loadPoints();
-
-  window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-  });
-</script>
+    document.body.appendChild(renderer.domElement);
 
+    const controls = new OrbitControls(camera, renderer.domElement);
+    camera.position.z = 300;
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+
+    const globe = new ThreeGlobe()
+      .globeImageUrl('./earth.jpg')
+      .pointAltitude(0.01)
+      .pointColor(() => 'red');
+
+    scene.add(globe);
+
+    const ambientLight = new THREE.AmbientLight(0xbbbbbb);
+    scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(0, 0, 1);
+    scene.add(directionalLight);
+
+    async function loadPoints() {
+      try {
+        const { data, error } = await supabase
+          .from('visits')
+          .select('*')
+          .order('timestamp', { ascending: false })
+          .limit(500);
+
+        if (error) throw error;
+
+        const points = data.map(p => ({
+          lat: p.lat,
+          lng: p.lng
+        }));
+
+        globe.pointsData(points);
+        console.log(`✅ Loaded ${points.length} history points`);
+      } catch (err) {
+        console.warn("⚠️ Failed to load points:", err);
+      }
+    }
+
+    async function logVisitor() {
+      try {
+        const res = await fetch('https://ipwho.is/');
+        const ipData = await res.json();
+
+        const { latitude, longitude, city, country } = ipData;
+        if (!latitude || !longitude) throw new Error("Invalid IP geolocation");
+
+        console.log("📌 Visitor location:", ipData);
+
+        // Add online marker with city label
+        scene.add(createLabel(city, latitude, longitude));
+
+        // Save to Supabase
+        await supabase.from('visits').insert([{ lat: latitude, lng: longitude, city, country }]);
+      } catch (e) {
+        console.error("📛 Visitor logging failed:", e);
+      }
+    }
+
+    function createLabel(text, lat, lng) {
+      const spriteMaterial = new THREE.SpriteMaterial({
+        map: new THREE.CanvasTexture(generateLabelCanvas(text)),
+        transparent: true
+      });
+      const sprite = new THREE.Sprite(spriteMaterial);
+
+      const phi = (90 - lat) * Math.PI / 180;
+      const theta = (180 - lng) * Math.PI / 180;
+
+      const radius = 100;
+      sprite.position.setFromSphericalCoords(radius + 1, phi, theta);
+      sprite.scale.set(40, 20, 1);
+      return sprite;
+    }
+
+    function generateLabelCanvas(text) {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 256;
+      canvas.height = 64;
+      ctx.fillStyle = 'white';
+      ctx.font = '28px sans-serif';
+      ctx.fillText(text, 10, 40);
+      return canvas;
+    }
+
+    async function init() {
+      await loadPoints();
+      await logVisitor();
+      animate();
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      globe.rotation.y += 0.001;
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    init();
+  </script>
+
+  <!-- Яндекс.Метрика -->
+  <script type="text/javascript">
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){
+    (m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();
+    for (var j = 0; j < document.scripts.length; j++) {
+    if (document.scripts[j].src === r) { return; }}
+    k=e.createElement(t),a=e.getElementsByTagName(t)[0],
+    k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(102315096, "init", {
+        clickmap:true,
+        trackLinks:true,
+        accurateTrackBounce:true
+    });
+  </script>
+  <noscript><div><img src="https://mc.yandex.ru/watch/102315096" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+  <!-- /Яндекс.Метрика -->
 </body>
 </html>
