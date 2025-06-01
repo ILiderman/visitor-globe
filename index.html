@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Visitor Globe (Fixed Module)</title>
+  <title>Visitor Globe (Fully Fixed)</title>
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { display: block; }
@@ -23,7 +23,7 @@
   const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
   const renderer = new THREE.WebGLRenderer();
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
@@ -33,7 +33,7 @@
   controls.update();
 
   const globe = new ThreeGlobe()
-    .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg')
+    .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-dark.jpg')  // Stable texture
     .pointAltitude(0.01)
     .pointColor(() => 'red');
 
@@ -51,32 +51,42 @@
       const data = await res.json();
       const { latitude, longitude, city, country_name } = data;
 
-      await supabaseClient.from("visits").insert([{
+      const { error } = await supabaseClient.from("visits").insert([{
         lat: latitude,
         lng: longitude,
         city: city,
         country: country_name
       }]);
-      console.log("📌 Visitor logged:", city, country_name);
+
+      if (error) {
+        console.error("❌ Error inserting visitor:", error);
+      } else {
+        console.log("📌 Visitor logged:", city, country_name);
+      }
     } catch (err) {
-      console.error("IP API failed:", err);
+      console.error("❌ IP API failed:", err);
     }
   }
 
   async function loadPoints() {
-    const { data, error } = await supabaseClient.from("visits").select("*").order("timestamp", { ascending: false }).limit(200);
-    if (error) {
-      console.error("Failed to fetch points:", error);
-      return;
-    }
+    try {
+      const { data, error } = await supabaseClient.from("visits").select("*").order("timestamp", { ascending: false }).limit(200);
+      if (error) {
+        console.error("❌ Failed to fetch points:", error);
+        return;
+      }
 
-    globe.pointsData(data);
-    globe.labelsData(data)
-      .labelLat(d => d.lat)
-      .labelLng(d => d.lng)
-      .labelText(d => d.city || "")
-      .labelSize(1.5)
-      .labelDotRadius(0.4);
+      globe.pointsData(data);
+      globe.labelsData(data)
+        .labelLat(d => d.lat)
+        .labelLng(d => d.lng)
+        .labelText(d => d.city || "")
+        .labelSize(1.5)
+        .labelDotRadius(0.4);
+      console.log("✅ Points rendered:", data.length);
+    } catch (err) {
+      console.error("❌ loadPoints() failed:", err);
+    }
   }
 
   function animate() {
@@ -92,7 +102,7 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
-  // 🔄 Start everything
+  // Start
   trackVisitor();
   loadPoints();
   setInterval(loadPoints, 10000);
