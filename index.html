@@ -80,7 +80,7 @@
           .from("visits")
           .select("*")
           .order("timestamp", { ascending: false })
-          .limit(200);
+          .limit(1000);
 
         if (error) {
           console.error("❌ Failed to fetch points:", error);
